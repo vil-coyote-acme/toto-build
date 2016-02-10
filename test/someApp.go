@@ -15,31 +15,13 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-package build
+package test
 
-import (
-	"os/exec"
-)
-
-// get the version of go tools
-func GoVersion() (string, error) {
-	cmd := exec.Command("go", "version")
-	return execCommand(cmd)
+type myStruct struct {
 }
 
-// call the build command
-func BuildPackage(pkg string) (string, error) {
-	// todo next here: support many options !
-	cmd := exec.Command("go", "build", "-v", pkg)
-	return execCommand(cmd)
+type myInterface interface {
 }
 
-// execute one command
-func execCommand(cmd *exec.Cmd) (string, error) {
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		return string(out[:len(out)]), nil
-	} else {
-		return err.Error(), err
-	}
+func MyFunction(someThing string) {
 }

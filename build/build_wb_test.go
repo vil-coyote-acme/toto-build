@@ -25,9 +25,9 @@ import (
 )
 
 // test the command execution
-func Test_execCommand_should_failed_for_non_existing_command(t *testing.T)  {
+func Test_execCommand_should_failed_for_non_existing_command(t *testing.T) {
 	str, err := execCommand(exec.Command("toto", "isHappy"))
-	t.Logf("test the exec command failure. Result : %s", str)
+	t.Logf("test the exec command failure. Output : %s", str)
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(str, "executable file not found in $PATH"))
 }

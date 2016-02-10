@@ -27,8 +27,16 @@ import (
 // test the printing of go tools versions
 func Test_Should_Get_Go_Tools_Versions(t *testing.T) {
 	version, err := build.GoVersion();
-	t.Logf("Test the go version command. Output : %s", version)
+	t.Logf("Test the go version command. Output : %s\r", version)
 	assert.True(t, strings.Contains(version, "go version"))
+	assert.Nil(t, err)
+}
+
+// test the build function
+func Test_Should_Build_Test_Sources(t *testing.T) {
+	out, err := build.BuildPackage("toto-build/test")
+	t.Logf("Test the go build command with succes. Output : %s", out)
+	assert.Equal(t, "toto-build/test", strings.TrimSpace(out))
 	assert.Nil(t, err)
 }
 
