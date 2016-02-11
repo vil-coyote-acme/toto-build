@@ -15,20 +15,14 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-package build
+package testtools
 
-import (
-	"testing"
-	"os/exec"
-	"github.com/stretchr/testify/assert"
-	"strings"
-	"toto-build/testtools"
-)
+import "bytes"
 
-// test the command execution
-func Test_execCommand_should_failed_for_non_existing_command(t *testing.T) {
-	c := execCommand(exec.Command("toto", "isHappy"))
-	str := testtools.ConsumeStringChan(c)
-	t.Logf("test the exec command failure. Output : %s", str)
-	assert.True(t, strings.Contains(str, "executable file not found in $PATH"))
+func ConsumeStringChan(c chan string) string {
+	var buffer bytes.Buffer
+	for line := range c {
+		buffer.WriteString(line)
+	}
+	return buffer.String()
 }

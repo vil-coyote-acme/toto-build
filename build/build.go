@@ -19,32 +19,54 @@ package build
 
 import (
 	"os/exec"
+	"io"
+	"bufio"
 )
 
 // get the version of go tools
-func GoVersion() (string, error) {
+func GoVersion() (chan string) {
 	cmd := exec.Command("go", "version")
 	return execCommand(cmd)
 }
 
 // call the build command
-func BuildPackage(pkg string) (string, error) {
+func BuildPackage(pkg string) (chan string) {
 	// todo next here: support many options !
 	cmd := exec.Command("go", "build", "-v", pkg)
 	return execCommand(cmd)
 }
 
-func TestPackage(pkg string) (string, error) {
+func TestPackage(pkg string) (chan string) {
 	cmd := exec.Command("go", "test", pkg)
 	return execCommand(cmd)
 }
 
 // execute one command
-func execCommand(cmd *exec.Cmd) (string, error) {
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		return string(out[:len(out)]), nil
-	} else {
-		return err.Error(), err
-	}
+func execCommand(cmd *exec.Cmd) (chan string) {
+	c := make(chan string, 10)
+	go func() {
+		defer close(c)
+		errCmd := cmd.Start()
+		if errCmd != nil {
+			c <- errCmd.Error()
+		} else {
+			stdout, errPipe1 := cmd.StdoutPipe()
+			stderr, errPipe2 := cmd.StderrPipe()
+			if errPipe1 != nil {
+				c <- errPipe1.Error()
+			} else if errPipe2 != nil {
+				c <- errPipe2.Error()
+			} else {
+				multi := io.MultiReader(stdout, stderr)
+				in := bufio.NewScanner(multi)
+				for in.Scan() {
+					c <- in.Text()
+				}
+				if in.Err() != nil {
+					c <- in.Err().Error()
+				}
+			}
+		}
+	}()
+	return c
 }
