@@ -23,5 +23,6 @@ type myStruct struct {
 type myInterface interface {
 }
 
-func MyFunction(someThing string) {
+func MyFunction() string {
+	return "myFunction"
 }

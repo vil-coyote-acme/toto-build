@@ -40,4 +40,10 @@ func Test_Should_Build_Test_Sources(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func Test_Should_Test_Sources(t *testing.T) {
+	out, err := build.TestPackage("toto-build/test")
+	t.Logf("Test the go test command with succes. Output : %s", out)
+	assert.Nil(t, err)
+}
+
 

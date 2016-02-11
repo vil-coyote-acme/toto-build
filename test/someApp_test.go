@@ -15,36 +15,15 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-package build
+package test_test
 
 import (
-	"os/exec"
+	"testing"
+	"toto-build/test"
+	"github.com/stretchr/testify/assert"
 )
 
-// get the version of go tools
-func GoVersion() (string, error) {
-	cmd := exec.Command("go", "version")
-	return execCommand(cmd)
-}
-
-// call the build command
-func BuildPackage(pkg string) (string, error) {
-	// todo next here: support many options !
-	cmd := exec.Command("go", "build", "-v", pkg)
-	return execCommand(cmd)
-}
-
-func TestPackage(pkg string) (string, error) {
-	cmd := exec.Command("go", "test", pkg)
-	return execCommand(cmd)
-}
-
-// execute one command
-func execCommand(cmd *exec.Cmd) (string, error) {
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		return string(out[:len(out)]), nil
-	} else {
-		return err.Error(), err
-	}
+func Test_MyFunction(t *testing.T) {
+	res := test.MyFunction()
+	assert.Equal(t, "myFunction", res)
 }
