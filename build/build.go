@@ -46,13 +46,13 @@ func execCommand(cmd *exec.Cmd) (chan string) {
 	c := make(chan string, 10)
 	go func() {
 		defer close(c)
+		stdout, errPipe1 := cmd.StdoutPipe()
+		stderr, errPipe2 := cmd.StderrPipe()
 		errCmd := cmd.Start()
 		if errCmd != nil {
 			c <- errCmd.Error()
 		} else {
 			// todo check this errors in unit test. With mock ?
-			stdout, errPipe1 := cmd.StdoutPipe()
-			stderr, errPipe2 := cmd.StderrPipe()
 			if errPipe1 != nil {
 				c <- errPipe1.Error()
 			} else if errPipe2 != nil {
