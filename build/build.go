@@ -50,6 +50,7 @@ func execCommand(cmd *exec.Cmd) (chan string) {
 		if errCmd != nil {
 			c <- errCmd.Error()
 		} else {
+			// todo check this errors in unit test. With mock ?
 			stdout, errPipe1 := cmd.StdoutPipe()
 			stderr, errPipe2 := cmd.StderrPipe()
 			if errPipe1 != nil {
