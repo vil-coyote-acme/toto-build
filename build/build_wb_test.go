@@ -32,3 +32,13 @@ func Test_execCommand_should_failed_for_non_existing_command(t *testing.T) {
 	t.Logf("test the exec command failure. Output : %s", str)
 	assert.True(t, strings.Contains(str, "executable file not found in $PATH"))
 }
+
+func Test_hasError_Should_Return_False(t *testing.T){
+	res := hasError(nil, nil, nil)
+	assert.False(t, res)
+}
+
+func Test_hasError_Should_Return_True(t *testing.T){
+	res := hasError(nil, nil, new(error))
+	assert.True(t, res)
+}

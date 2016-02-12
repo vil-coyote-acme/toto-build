@@ -20,6 +20,7 @@ package testtools
 import "bytes"
 
 func ConsumeStringChan(c chan string) string {
+	// todo : tests !
 	var buffer bytes.Buffer
 	for line := range c {
 		buffer.WriteString(line)

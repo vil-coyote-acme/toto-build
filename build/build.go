@@ -71,3 +71,13 @@ func execCommand(cmd *exec.Cmd) (chan string) {
 	}()
 	return c
 }
+
+func hasError(errors ...*error) (res bool) {
+	for _, err := range errors {
+		if err != nil {
+			res = true
+			return
+		}
+	}
+	return
+}
