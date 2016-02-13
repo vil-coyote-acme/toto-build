@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"io"
 	"bufio"
+	"strings"
 )
 
 // get the version of go tools
@@ -49,34 +50,29 @@ func execCommand(cmd *exec.Cmd) (chan string) {
 		stdout, errPipe1 := cmd.StdoutPipe()
 		stderr, errPipe2 := cmd.StderrPipe()
 		errCmd := cmd.Start()
-		if errCmd != nil {
-			c <- errCmd.Error()
+		hasErr, errMes := hasError(errPipe1, errPipe2, errCmd)
+		if hasErr {
+			c <- strings.Join(errMes, "\n\r")
 		} else {
-			// todo check this errors in unit test. With mock ?
-			if errPipe1 != nil {
-				c <- errPipe1.Error()
-			} else if errPipe2 != nil {
-				c <- errPipe2.Error()
-			} else {
-				multi := io.MultiReader(stdout, stderr)
-				in := bufio.NewScanner(multi)
-				for in.Scan() {
-					c <- in.Text()
-				}
-				if in.Err() != nil {
-					c <- in.Err().Error()
-				}
+			multi := io.MultiReader(stdout, stderr)
+			in := bufio.NewScanner(multi)
+			for in.Scan() {
+				c <- in.Text()
+			}
+			if in.Err() != nil {
+				c <- in.Err().Error()
 			}
 		}
+
 	}()
 	return c
 }
 
-func hasError(errors ...*error) (res bool) {
+func hasError(errors ...error) (res bool, errMess []string) {
 	for _, err := range errors {
 		if err != nil {
+			errMess = append(errMess, err.Error())
 			res = true
-			return
 		}
 	}
 	return

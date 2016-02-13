@@ -33,12 +33,14 @@ func Test_execCommand_should_failed_for_non_existing_command(t *testing.T) {
 	assert.True(t, strings.Contains(str, "executable file not found in $PATH"))
 }
 
-func Test_hasError_Should_Return_False(t *testing.T){
-	res := hasError(nil, nil, nil)
+func Test_hasError_Should_Return_False(t *testing.T) {
+	res, mes := hasError(nil, nil, nil)
 	assert.False(t, res)
+	assert.Nil(t, mes)
 }
 
-func Test_hasError_Should_Return_True(t *testing.T){
-	res := hasError(nil, nil, new(error))
+func Test_hasError_Should_Return_True(t *testing.T) {
+	res, mes := hasError(nil, nil, testtools.NewTestErr("my error"))
 	assert.True(t, res)
+	assert.Equal(t, "my error", mes[0])
 }

@@ -19,6 +19,21 @@ package testtools
 
 import "bytes"
 
+
+type TestErr struct {
+	message string
+}
+
+func (err TestErr) Error() string {
+	return err.message
+}
+
+func NewTestErr(mess string) TestErr {
+	err := new(TestErr)
+	err.message = mess
+	return *err
+}
+
 func ConsumeStringChan(c chan string) string {
 	// todo : tests !
 	var buffer bytes.Buffer
