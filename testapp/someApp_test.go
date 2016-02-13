@@ -19,7 +19,7 @@ package testapp_test
 
 import (
 	"testing"
-	"toto-build/testapp"
+	"toto-build-agent/testapp"
 	"github.com/stretchr/testify/assert"
 )
 

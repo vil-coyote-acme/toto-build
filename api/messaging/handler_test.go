@@ -19,11 +19,11 @@ package messaging_test
 
 import (
 	"testing"
-	"toto-build/api/messaging"
-	"toto-build/message"
+	"toto-build-agent/api/messaging"
 	"github.com/nsqio/go-nsq"
 	"github.com/stretchr/testify/assert"
 	"encoding/json"
+	"github.com/vil-coyote-acme/toto-build-common/message"
 )
 
 func Test_HandleMessage_Should_Return_Error_when_No_ToWork(t *testing.T) {

@@ -19,10 +19,10 @@ package build_test
 
 import (
 	"testing"
-	"toto-build/build"
+	"toto-build-agent/build"
 	"github.com/stretchr/testify/assert"
 	"strings"
-	"toto-build/testtools"
+	"github.com/vil-coyote-acme/toto-build-common/testtools"
 )
 
 // test the printing of go tools versions
@@ -35,14 +35,14 @@ func Test_Should_Get_Go_Tools_Versions(t *testing.T) {
 
 // test the build function
 func Test_Should_Build_Test_Sources(t *testing.T) {
-	c := build.BuildPackage("toto-build/testapp")
+	c := build.BuildPackage("toto-build-agent/testapp")
 	out := testtools.ConsumeStringChan(c)
 	t.Logf("Test the go build command with succes. Output : %s\n\r", out)
-	assert.Equal(t, "toto-build/testapp", strings.TrimSpace(out))
+	assert.Equal(t, "toto-build-agent/testapp", strings.TrimSpace(out))
 }
 
 func Test_Should_Test_Sources(t *testing.T) {
-	c := build.TestPackage("toto-build/testapp")
+	c := build.TestPackage("toto-build-agent/testapp")
 	out := testtools.ConsumeStringChan(c)
 	t.Logf("Test the go test command with succes. Output : %s\n", out)
 }

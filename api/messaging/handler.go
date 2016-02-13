@@ -19,10 +19,10 @@ package messaging
 
 import (
 	"github.com/nsqio/go-nsq"
-	"toto-build/message"
 	"log"
 	"encoding/json"
 	"bytes"
+	"github.com/vil-coyote-acme/toto-build-common/message"
 )
 
 // messaging api handler

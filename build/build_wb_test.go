@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"github.com/stretchr/testify/assert"
 	"strings"
-	"toto-build/testtools"
+	"github.com/vil-coyote-acme/toto-build-common/testtools"
 )
 
 // test the command execution
