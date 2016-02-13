@@ -15,29 +15,24 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-package testtools
+package testtools_test
 
-import "bytes"
+import (
+	"testing"
+	"toto-build/testtools"
+	"github.com/stretchr/testify/assert"
+)
 
-
-type TestErr struct {
-	message string
+func Test_Should_Create_New_TestErr(t *testing.T) {
+	myError := testtools.NewTestErr("error")
+	assert.Equal(t, "error", myError.Error())
 }
 
-func (err TestErr) Error() string {
-	return err.message
-}
-
-func NewTestErr(mess string) TestErr {
-	err := new(TestErr)
-	err.message = mess
-	return *err
-}
-
-func ConsumeStringChan(c chan string) string {
-	var buffer bytes.Buffer
-	for line := range c {
-		buffer.WriteString(line)
-	}
-	return buffer.String()
+func Test_Should_ConsumeStringChan(t *testing.T) {
+	c := make(chan string, 2)
+	c <- "toto"
+	c <- "titi"
+	close(c)
+	mes := testtools.ConsumeStringChan(c)
+	assert.Equal(t, "tototiti", mes)
 }

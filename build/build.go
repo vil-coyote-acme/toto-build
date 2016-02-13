@@ -63,11 +63,11 @@ func execCommand(cmd *exec.Cmd) (chan string) {
 				c <- in.Err().Error()
 			}
 		}
-
 	}()
 	return c
 }
 
+// Detect error and return mes error
 func hasError(errors ...error) (res bool, errMess []string) {
 	for _, err := range errors {
 		if err != nil {
