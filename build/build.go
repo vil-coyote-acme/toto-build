@@ -38,13 +38,13 @@ func BuildPackage(pkg string) (chan string) {
 }
 
 func TestPackage(pkg string) (chan string) {
-	cmd := exec.Command("go", "test", pkg)
+	cmd := exec.Command("go", "test", "-cover", pkg)
 	return execCommand(cmd)
 }
 
 // execute one command
 func execCommand(cmd *exec.Cmd) (chan string) {
-	c := make(chan string, 10)
+	c := make(chan string, 50)
 	go func() {
 		defer close(c)
 		stdout, errPipe1 := cmd.StdoutPipe()
