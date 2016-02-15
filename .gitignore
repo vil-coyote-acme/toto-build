@@ -24,3 +24,7 @@ _testmain.go
 *.prof
 
 coverage.out
+
+## tmp file from embedded broker output
+**/*.tmp
+**/*.dat

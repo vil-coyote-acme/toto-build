@@ -34,6 +34,7 @@ func Test_HandleMessage_Should_Return_Error_when_No_ToWork(t *testing.T) {
 	var messId [16]byte
 	// when
 	err := h.HandleMessage(nsq.NewMessage(messId, make([]byte, 256)))
+	// then
 	assert.NotNil(t, err)
 }
 
@@ -44,9 +45,10 @@ func Test_HandleMessage_Should_Emit_ToWork(t *testing.T) {
 	h := messaging.NewHandler(c)
 	var messId [16]byte
 	mess := message.ToWork{int64(1), message.TEST, "myPkg"}
-	body,_ := json.Marshal(mess)
+	body, _ := json.Marshal(mess)
 	// when
 	err := h.HandleMessage(nsq.NewMessage(messId, body))
+	// then
 	assert.Nil(t, err)
 	assert.Equal(t, mess, <-c)
 }
@@ -58,12 +60,13 @@ func Test_HandleMessage_Should_Return_Error_when_Buffer_full(t *testing.T) {
 	h := messaging.NewHandler(c)
 	var messId [16]byte
 	mess := message.ToWork{int64(3), message.TEST, "myPkg3"}
-	body,_ := json.Marshal(mess)
+	body, _ := json.Marshal(mess)
 	// and
 	c <- message.ToWork{int64(1), message.TEST, "myPkg1"}
 	c <- message.ToWork{int64(2), message.TEST, "myPkg2"}
 	// when
 	err := h.HandleMessage(nsq.NewMessage(messId, body))
+	// then
 	assert.NotNil(t, err)
 	assert.Equal(t, "the buffer is full", err.Error())
 }
