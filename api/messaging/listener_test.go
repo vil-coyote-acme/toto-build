@@ -55,6 +55,6 @@ func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
 	// when
 	incomingChan := l.Start()
 	// then
-	assert.Equal(t, message.ToWork{int64(1), message.TEST, "myPkg"}, <- incomingChan)
+	assert.Equal(t, message.ToWork{int64(1), message.TEST, "myPkg"}, <-incomingChan)
 }
 

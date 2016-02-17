@@ -20,7 +20,19 @@ package messaging
 import (
 	"testing"
 	"github.com/stretchr/testify/assert"
+	"toto-build-common/testtools"
+	"github.com/nsqio/go-nsq"
+	"time"
 )
+
+type handlerTest struct {
+	receip chan string
+}
+
+func (h * handlerTest) HandleMessage(mes *nsq.Message) (e error) {
+	h.receip <- string(mes.Body[:len(mes.Body)])
+	return e
+}
 
 func Test_NewProducerConfig(t *testing.T) {
 	// when
@@ -31,5 +43,32 @@ func Test_NewProducerConfig(t *testing.T) {
 }
 
 func Test_Producer_Start(t *testing.T) {
+	// given
+	c := NewProducerConfig()
+	c.NsqAddr = "127.0.0.1:4150"
+	p := NewProducer(c)
+	// and broker initialization
+	b := testtools.NewBroker()
+	b.Start()
+	defer b.Stop()
+	// when
+	ch := p.Start()
+	ch <- "test"
+	// and test listener
+	receip, consumer := setupListener(c.Topic)
+	// then
+	assert.Equal(t, "test", <-receip)
+	consumer.Stop()
+}
 
+func setupListener(topic string) (chan string, *nsq.Consumer) {
+	duration, _ := time.ParseDuration("300ms")
+	time.Sleep(duration)
+	handler := new(handlerTest)
+	receip := make(chan string, 2)
+	handler.receip = receip
+	consumer, _ := nsq.NewConsumer(topic, "scheduler", nsq.NewConfig())
+	consumer.AddHandler(handler)
+	consumer.ConnectToNSQLookupds([]string{"127.0.0.1:4161"})
+	return receip, consumer
 }
