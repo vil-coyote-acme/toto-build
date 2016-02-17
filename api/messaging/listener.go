@@ -23,7 +23,7 @@ import (
 	"log"
 )
 
-type Config struct {
+type ListenerConfig struct {
 	LookupAddr []string
 	Topic      string
 	Channel    string
@@ -31,25 +31,27 @@ type Config struct {
 }
 
 type Listener struct {
-	conf *Config
+	conf *ListenerConfig
 }
 
-func NewConfig() *Config {
-	c := new(Config)
-	c.LookupAddr = []string{"127.0.0.1:4161"}
+// initialize new config for listener
+func NewListenerConfig() *ListenerConfig {
+	c := new(ListenerConfig)
 	c.Topic = "jobs"
 	c.Channel = "buld-agent"
 	c.BuffSize = 10
 	return c
 }
 
-func NewListener(conf *Config) *Listener {
+// initialize new listener
+func NewListener(conf *ListenerConfig) *Listener {
 	l := new(Listener)
 	l.conf = conf
 	return l
 }
 
-func (l *Listener) StartListening() chan message.ToWork {
+// start listening for incoming ToWork
+func (l *Listener) Start() chan message.ToWork {
 	c := make(chan message.ToWork, l.conf.BuffSize)
 	cons, err := nsq.NewConsumer(l.conf.Topic, l.conf.Channel, nsq.NewConfig())
 	if err != nil {
@@ -59,4 +61,8 @@ func (l *Listener) StartListening() chan message.ToWork {
 	cons.AddHandler(NewHandler(c))
 	cons.ConnectToNSQLookupds(l.conf.LookupAddr)
 	return c
+}
+
+func (l *Listener) Stop() {
+	// todo implements and test
 }

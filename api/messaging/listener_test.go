@@ -29,10 +29,8 @@ import (
 
 func Test_NewConfig(t *testing.T) {
 	// when
-	conf := messaging.NewConfig()
+	conf := messaging.NewListenerConfig()
 	// then
-	assert.Equal(t, 1, len(conf.LookupAddr))
-	assert.Equal(t, "127.0.0.1:4161", conf.LookupAddr[0])
 	assert.Equal(t, "buld-agent", conf.Channel)
 	assert.Equal(t, "jobs", conf.Topic)
 	assert.Equal(t, 10, conf.BuffSize)
@@ -40,7 +38,8 @@ func Test_NewConfig(t *testing.T) {
 
 func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
 	// given the listener
-	c := messaging.NewConfig()
+	c := messaging.NewListenerConfig()
+	c.LookupAddr = []string{"127.0.0.1:4161"}
 	l := messaging.NewListener(c)
 	// broker initialization
 	b := testtools.NewBroker()
@@ -54,7 +53,7 @@ func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
 	p, _ := nsq.NewProducer("127.0.0.1:4150", config)
 	p.Publish(c.Topic, body)
 	// when
-	incomingChan := l.StartListening()
+	incomingChan := l.Start()
 	// then
 	assert.Equal(t, message.ToWork{int64(1), message.TEST, "myPkg"}, <- incomingChan)
 }
