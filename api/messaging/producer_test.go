@@ -18,19 +18,23 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package messaging
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
-	"toto-build-common/testtools"
+	"encoding/json"
 	"github.com/nsqio/go-nsq"
+	"github.com/stretchr/testify/assert"
+	"github.com/vil-coyote-acme/toto-build-common/message"
+	"testing"
 	"time"
+	"toto-build-common/testtools"
 )
 
 type handlerTest struct {
-	receip chan string
+	receip chan message.Report
 }
 
-func (h * handlerTest) HandleMessage(mes *nsq.Message) (e error) {
-	h.receip <- string(mes.Body[:len(mes.Body)])
+func (h *handlerTest) HandleMessage(mes *nsq.Message) (e error) {
+	var report message.Report
+	json.Unmarshal(mes.Body, &report)
+	h.receip <- report
 	return e
 }
 
@@ -52,20 +56,22 @@ func Test_Producer_Start(t *testing.T) {
 	b.Start()
 	defer b.Stop()
 	// when
-	ch := p.Start()
-	ch <- "test"
+	ch := make(chan message.Report, 20)
+	p.Start(ch)
+	mes := message.Report{int64(1), message.PENDING, []string{"test"}}
+	ch <- mes
 	// and test listener
 	receip, consumer := setupListener(c.Topic)
 	// then
-	assert.Equal(t, "test", <-receip)
+	assert.Equal(t, mes, <-receip)
 	consumer.Stop()
 }
 
-func setupListener(topic string) (chan string, *nsq.Consumer) {
+func setupListener(topic string) (chan message.Report, *nsq.Consumer) {
 	duration, _ := time.ParseDuration("300ms")
 	time.Sleep(duration)
 	handler := new(handlerTest)
-	receip := make(chan string, 2)
+	receip := make(chan message.Report, 2)
 	handler.receip = receip
 	consumer, _ := nsq.NewConsumer(topic, "scheduler", nsq.NewConfig())
 	consumer.AddHandler(handler)

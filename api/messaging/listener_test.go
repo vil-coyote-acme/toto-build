@@ -18,13 +18,13 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package messaging_test
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
-	"toto-build-agent/api/messaging"
-	"github.com/vil-coyote-acme/toto-build-common/testtools"
-	"github.com/vil-coyote-acme/toto-build-common/message"
 	"encoding/json"
 	"github.com/nsqio/go-nsq"
+	"github.com/stretchr/testify/assert"
+	"github.com/vil-coyote-acme/toto-build-common/message"
+	"github.com/vil-coyote-acme/toto-build-common/testtools"
+	"testing"
+	"toto-build-agent/api/messaging"
 )
 
 func Test_NewConfig(t *testing.T) {
@@ -57,4 +57,3 @@ func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
 	// then
 	assert.Equal(t, message.ToWork{int64(1), message.TEST, "myPkg"}, <-incomingChan)
 }
-

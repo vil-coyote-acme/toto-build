@@ -18,12 +18,12 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package messaging_test
 
 import (
-	"testing"
-	"toto-build-agent/api/messaging"
+	"encoding/json"
 	"github.com/nsqio/go-nsq"
 	"github.com/stretchr/testify/assert"
-	"encoding/json"
 	"github.com/vil-coyote-acme/toto-build-common/message"
+	"testing"
+	"toto-build-agent/api/messaging"
 )
 
 func Test_HandleMessage_Should_Return_Error_when_No_ToWork(t *testing.T) {

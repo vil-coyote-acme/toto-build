@@ -18,11 +18,11 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package build
 
 import (
-	"testing"
-	"os/exec"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"github.com/vil-coyote-acme/toto-build-common/testtools"
+	"os/exec"
+	"strings"
+	"testing"
 )
 
 // test the command execution

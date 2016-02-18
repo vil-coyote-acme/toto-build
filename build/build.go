@@ -18,32 +18,32 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package build
 
 import (
-	"os/exec"
-	"io"
 	"bufio"
+	"io"
+	"os/exec"
 	"strings"
 )
 
 // get the version of go tools
-func GoVersion() (chan string) {
+func GoVersion() chan string {
 	cmd := exec.Command("go", "version")
 	return execCommand(cmd)
 }
 
 // call the build command
-func BuildPackage(pkg string) (chan string) {
+func BuildPackage(pkg string) chan string {
 	// todo next here: support many options !
 	cmd := exec.Command("go", "build", "-v", pkg)
 	return execCommand(cmd)
 }
 
-func TestPackage(pkg string) (chan string) {
+func TestPackage(pkg string) chan string {
 	cmd := exec.Command("go", "test", "-cover", pkg)
 	return execCommand(cmd)
 }
 
 // execute one command
-func execCommand(cmd *exec.Cmd) (chan string) {
+func execCommand(cmd *exec.Cmd) chan string {
 	c := make(chan string, 50)
 	go func() {
 		defer close(c)

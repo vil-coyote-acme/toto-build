@@ -18,9 +18,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package testapp_test
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"toto-build-agent/testapp"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_MyFunction(t *testing.T) {

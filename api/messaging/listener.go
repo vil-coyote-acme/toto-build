@@ -18,8 +18,8 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package messaging
 
 import (
-	"github.com/vil-coyote-acme/toto-build-common/message"
 	"github.com/nsqio/go-nsq"
+	"github.com/vil-coyote-acme/toto-build-common/message"
 	"log"
 )
 

@@ -18,7 +18,9 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package messaging
 
 import (
+	"encoding/json"
 	"github.com/nsqio/go-nsq"
+	"github.com/vil-coyote-acme/toto-build-common/message"
 	"log"
 )
 
@@ -29,11 +31,10 @@ type ProducerConfig struct {
 
 type Producer struct {
 	conf *ProducerConfig
-	listeningChan chan string
 }
 
 func NewProducerConfig() *ProducerConfig {
-	c := new (ProducerConfig)
+	c := new(ProducerConfig)
 	c.Topic = "report"
 	return c
 }
@@ -45,23 +46,21 @@ func NewProducer(conf *ProducerConfig) *Producer {
 }
 
 // start waiting for report to send back to toto scheduler
-func (prd *Producer) Start() chan string {
+func (producer *Producer) Start(reportChan chan message.Report) {
 	config := nsq.NewConfig()
-	p, errP := nsq.NewProducer(prd.conf.NsqAddr, config)
-	if errP != nil {
-		// todo implements test case to pass here
-		log.Panicf("Error during nsq Producer init : %f", errP.Error())
+	nsqProducer, errNsqProducer := nsq.NewProducer(producer.conf.NsqAddr, config)
+	if errNsqProducer != nil {
+		// Difficult to implements a test to pass here
+		log.Panicf("Error during nsq Producer init : %f", errNsqProducer.Error())
 	}
-	prd.listeningChan = make(chan string)
 	go func() {
-		for msg := range prd.listeningChan {
-			p.Publish(prd.conf.Topic, []byte(msg))
+		for msg := range reportChan {
+			marshallMess, errMarshalling := json.Marshal(msg)
+			if errMarshalling == nil {
+				nsqProducer.Publish(producer.conf.Topic, marshallMess)
+			} else {
+				log.Printf("Error during msg marshalling : %s", msg)
+			}
 		}
-	}();
-	return prd.listeningChan
-}
-
-// stop the producer
-func (prd *Producer) Stop() {
-	// todo implements stop
+	}()
 }

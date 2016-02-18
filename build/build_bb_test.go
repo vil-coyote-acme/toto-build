@@ -18,16 +18,16 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package build_test
 
 import (
+	"github.com/stretchr/testify/assert"
+	"github.com/vil-coyote-acme/toto-build-common/testtools"
+	"strings"
 	"testing"
 	"toto-build-agent/build"
-	"github.com/stretchr/testify/assert"
-	"strings"
-	"github.com/vil-coyote-acme/toto-build-common/testtools"
 )
 
 // test the printing of go tools versions
 func Test_Should_Get_Go_Tools_Versions(t *testing.T) {
-	c := build.GoVersion();
+	c := build.GoVersion()
 	out := testtools.ConsumeStringChan(c)
 	t.Logf("Test the go version command. Output : %s\n\r", out)
 	assert.True(t, strings.Contains(out, "go version"))
@@ -46,6 +46,3 @@ func Test_Should_Test_Sources(t *testing.T) {
 	out := testtools.ConsumeStringChan(c)
 	t.Logf("Test the go test command with succes. Output : %s\n", out)
 }
-
-
-

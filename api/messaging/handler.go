@@ -18,11 +18,11 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package messaging
 
 import (
-	"github.com/nsqio/go-nsq"
-	"log"
-	"encoding/json"
 	"bytes"
+	"encoding/json"
+	"github.com/nsqio/go-nsq"
 	"github.com/vil-coyote-acme/toto-build-common/message"
+	"log"
 )
 
 // messaging api handler
@@ -31,12 +31,13 @@ type Handler struct {
 }
 
 // Handle the incoming message. If inccorect or if buffer is full, return one error
-func (h * Handler) HandleMessage(mes *nsq.Message) (error) {
+func (h *Handler) HandleMessage(mes *nsq.Message) error {
 	toWork, e := unmarshallToWork(mes)
 	if e == nil {
 		select {
 		case h.buffer <- toWork:
-		default: e = message.Error{"the buffer is full"}
+		default:
+			e = message.Error{"the buffer is full"}
 		}
 	}
 	return e
