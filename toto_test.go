@@ -15,45 +15,64 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
-package messaging_test
+package main
 
 import (
+	"testing"
+	"github.com/stretchr/testify/assert"
+	"flag"
+	"github.com/vil-coyote-acme/toto-build-common/testtools"
+	"github.com/vil-coyote-acme/toto-build-common/message"
 	"encoding/json"
 	"github.com/nsqio/go-nsq"
-	"github.com/stretchr/testify/assert"
-	"github.com/vil-coyote-acme/toto-build-common/message"
-	"testing"
-	"toto-build-agent/api/messaging"
 	"github.com/vil-coyote-acme/toto-build-common/broker"
 )
 
-func Test_NewConfig(t *testing.T) {
+func Test_Main_should_Parse_Arguments(t *testing.T) {
 	// when
-	conf := messaging.NewListenerConfig()
+	main()
 	// then
-	assert.Equal(t, "buld-agent", conf.Channel)
-	assert.Equal(t, "jobs", conf.Topic)
-	assert.Equal(t, 10, conf.BuffSize)
+	assert.True(t, flag.Parsed())
+	assert.Equal(t, "127.0.0.1", brokerAddr)
+	assert.Equal(t, "127.0.0.1", nsqLookUpHost)
+	assert.Equal(t, "4161", nsqLookUpPort)
 }
 
-func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
-	// given the listener
-	c := messaging.NewListenerConfig()
-	c.LookupAddr = []string{"127.0.0.1:4161"}
-	l := messaging.NewListener(c)
-	// broker initialization
-	b := broker.NewBroker()
-	b.Start()
+func Test_Main_should_Start_An_Nsq_Service(t *testing.T) {
+	//given
+	if !flag.Parsed() {
+		main()
+	}
+	b := startLookUp()
 	defer b.Stop()
+	// when
+	startListening()
+	sendMsg()
+	// then
+	receip, consumer := testtools.SetupListener("report")
+	assert.NotNil(t, consumer)
+	assert.NotNil(t, receip)
+	// first get the hello from the agent
+	hello := <- receip
+	assert.Equal(t, "Hello", hello.Logs[0])
+	// then get the build log
+	buildTrace := <- receip
+	assert.Contains(t, buildTrace.Logs[0], "toto-build-agent/testapp")
+	close(receip)
+}
+
+func startLookUp() *broker.Broker {
+	b := broker.NewBroker()
+	b.StartLookUp()
+	return b
+}
+
+func sendMsg() {
 	// test message creation
-	mess := message.ToWork{int64(1), message.TEST, "myPkg"}
+	mess := message.ToWork{int64(1), message.TEST, "toto-build-agent/testapp"}
 	body, _ := json.Marshal(mess)
 	// message sending
 	config := nsq.NewConfig()
 	p, _ := nsq.NewProducer("127.0.0.1:4150", config)
-	p.Publish(c.Topic, body)
-	// when
-	incomingChan := l.Start()
-	// then
-	assert.Equal(t, message.ToWork{int64(1), message.TEST, "myPkg"}, <-incomingChan)
+	p.Publish("jobs", body)
 }

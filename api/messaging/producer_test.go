@@ -18,25 +18,12 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package messaging
 
 import (
-	"encoding/json"
-	"github.com/nsqio/go-nsq"
 	"github.com/stretchr/testify/assert"
 	"github.com/vil-coyote-acme/toto-build-common/message"
 	"testing"
-	"time"
-	"toto-build-common/testtools"
+	"github.com/vil-coyote-acme/toto-build-common/broker"
+	"github.com/vil-coyote-acme/toto-build-common/testtools"
 )
-
-type handlerTest struct {
-	receip chan message.Report
-}
-
-func (h *handlerTest) HandleMessage(mes *nsq.Message) (e error) {
-	var report message.Report
-	json.Unmarshal(mes.Body, &report)
-	h.receip <- report
-	return e
-}
 
 func Test_NewProducerConfig(t *testing.T) {
 	// when
@@ -52,7 +39,7 @@ func Test_Producer_Start(t *testing.T) {
 	c.NsqAddr = "127.0.0.1:4150"
 	p := NewProducer(c)
 	// and broker initialization
-	b := testtools.NewBroker()
+	b := broker.NewBroker()
 	b.Start()
 	defer b.Stop()
 	// when
@@ -61,20 +48,8 @@ func Test_Producer_Start(t *testing.T) {
 	mes := message.Report{int64(1), message.PENDING, []string{"test"}}
 	ch <- mes
 	// and test listener
-	receip, consumer := setupListener(c.Topic)
+	receip, consumer := testtools.SetupListener(c.Topic)
 	// then
 	assert.Equal(t, mes, <-receip)
 	consumer.Stop()
-}
-
-func setupListener(topic string) (chan message.Report, *nsq.Consumer) {
-	duration, _ := time.ParseDuration("300ms")
-	time.Sleep(duration)
-	handler := new(handlerTest)
-	receip := make(chan message.Report, 2)
-	handler.receip = receip
-	consumer, _ := nsq.NewConsumer(topic, "scheduler", nsq.NewConfig())
-	consumer.AddHandler(handler)
-	consumer.ConnectToNSQLookupds([]string{"127.0.0.1:4161"})
-	return receip, consumer
 }

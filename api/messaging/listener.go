@@ -58,8 +58,10 @@ func (l *Listener) Start() chan message.ToWork {
 		log.Panicf("error when trying to create a consumer for topic : %v and channel : %v", l.conf.Topic, l.conf.Channel)
 	}
 	// maybe possible to handle message in multiple goroutines
+	log.Print("starting connecting broker listener")
 	cons.AddHandler(NewHandler(c))
 	cons.ConnectToNSQLookupds(l.conf.LookupAddr)
+	log.Print("Listener started")
 	return c
 }
 

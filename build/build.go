@@ -22,6 +22,7 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"log"
 )
 
 // get the version of go tools
@@ -44,6 +45,7 @@ func TestPackage(pkg string) chan string {
 
 // execute one command
 func execCommand(cmd *exec.Cmd) chan string {
+	log.Printf("Start executing one command : %s", cmd)
 	c := make(chan string, 50)
 	go func() {
 		defer close(c)
