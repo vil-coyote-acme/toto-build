@@ -20,7 +20,6 @@ package main
 import (
 	"testing"
 	"github.com/stretchr/testify/assert"
-	"flag"
 	"github.com/vil-coyote-acme/toto-build-common/testtools"
 	"github.com/vil-coyote-acme/toto-build-common/message"
 	"encoding/json"
@@ -32,17 +31,15 @@ func Test_Main_should_Parse_Arguments(t *testing.T) {
 	// when
 	main()
 	// then
-	assert.True(t, flag.Parsed())
 	assert.Equal(t, "127.0.0.1", brokerAddr)
+	assert.Equal(t, "4150", brokerPort)
 	assert.Equal(t, "127.0.0.1", nsqLookUpHost)
 	assert.Equal(t, "4161", nsqLookUpPort)
 }
 
 func Test_Main_should_Start_An_Nsq_Service(t *testing.T) {
 	//given
-	if !flag.Parsed() {
-		main()
-	}
+	initVar()
 	b := startLookUp()
 	defer b.Stop()
 	// when
@@ -53,12 +50,19 @@ func Test_Main_should_Start_An_Nsq_Service(t *testing.T) {
 	assert.NotNil(t, consumer)
 	assert.NotNil(t, receip)
 	// first get the hello from the agent
-	hello := <- receip
+	hello := <-receip
 	assert.Equal(t, "Hello", hello.Logs[0])
 	// then get the build log
-	buildTrace := <- receip
+	buildTrace := <-receip
 	assert.Contains(t, buildTrace.Logs[0], "toto-build-agent/testapp")
 	close(receip)
+}
+
+func initVar() {
+	brokerAddr = "127.0.0.1"
+	brokerPort = "4150"
+	nsqLookUpHost = "127.0.0.1"
+	nsqLookUpPort = "4161"
 }
 
 func startLookUp() *broker.Broker {

@@ -32,25 +32,31 @@ var (
 	nsqLookUpHost string
 	nsqLookUpPort string
 	brokerAddr string
+	brokerPort string
 )
 
 func main() {
 	flag.StringVar(&brokerAddr, "broker-addr", "127.0.0.1", "address of the broker. Should be accessible from scheduler")
+	flag.StringVar(&brokerPort, "broker-port", "4150", "port of the broker. Should be accessible from scheduler")
 	flag.StringVar(&nsqLookUpHost, "lookup-addrr", "127.0.0.1", "address of the lookup service. Used by toto-build to get topic used for communications")
 	flag.StringVar(&nsqLookUpPort, "lookup-port", "4161", "port of the lookup service.")
 	flag.Parse()
 }
 
+// start listening for toWork
+// will start an embeded broker, a report producer and a toWork listener
 func startListening() {
 	// first start the broker
 	log.Print("Start listening for jobs")
 	embeddedBroker := broker.NewBroker()
-	embeddedBroker.StartBroker() //todo configure ip and port
+	embeddedBroker.BrokerAddr = brokerAddr
+	embeddedBroker.BrokerPort = brokerPort
+	embeddedBroker.StartBroker()
 
 	// start the report producer
 	reportChan := make(chan message.Report, 20)
 	producerConf := messaging.NewProducerConfig()
-	producerConf.NsqAddr = "127.0.0.1:4150"//todo configure ip and port
+	producerConf.NsqAddr = brokerAddr + ":" + brokerPort
 	producer := messaging.NewProducer(producerConf)
 	producer.Start(reportChan)
 
@@ -59,43 +65,19 @@ func startListening() {
 	listenerConf.LookupAddr = []string{nsqLookUpHost + ":" + nsqLookUpPort}
 	listener := messaging.NewListener(listenerConf)
 	// must create the topic BEFORE listing on it
-	createTopic(listenerConf.Topic)
+	sayHello(listenerConf.Topic)
 	toWorkChan := listener.Start()
 
-	go func() {
-		// todo : put this code inside listener.go
-		for toWork := range toWorkChan {
-			log.Printf("receive one job : %s", toWork)
-			go executeJob(toWork, reportChan)
-		}
-	}()
+	// and then start executing incoming job
+	build.ExecuteJob(toWorkChan, reportChan)
 }
 
-func createTopic(topic string) {
+// will publish the first report : a hello one
+// todo => unit tests
+func sayHello(topic string) {
 	config := nsq.NewConfig()
-	p, _ := nsq.NewProducer("127.0.0.1:4150", config)//todo configure ip and port
+	p, _ := nsq.NewProducer(brokerAddr + ":" + brokerPort, config)
 	mess := message.ToWork{int64(1), message.HELLO, "HELLO"}
 	body, _ := json.Marshal(mess)// todo handle this error case
 	p.Publish("jobs", body)
-}
-
-func executeJob(toWork message.ToWork, reportChan chan message.Report) {
-	var logsChan chan string
-	switch toWork.Cmd {
-	case message.PACKAGE :
-		logsChan = build.BuildPackage(toWork.Package)
-	case message.TEST:
-		logsChan = build.TestPackage(toWork.Package)
-	case message.HELLO:
-		reportChan <- message.Report{toWork.JobId, message.WORKING, []string{"Hello"}}
-	default:
-	// todo handle this case
-	}
-	if logsChan != nil {
-		for log := range logsChan {
-			// todo handle buffered logs
-			// todo handle job status
-			reportChan <- message.Report{toWork.JobId, message.WORKING, []string{log}}
-		}
-	}
 }

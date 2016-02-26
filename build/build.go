@@ -23,7 +23,41 @@ import (
 	"os/exec"
 	"strings"
 	"log"
+	"github.com/vil-coyote-acme/toto-build-common/message"
 )
+
+// will lauch job on incoming toWork
+func ExecuteJob(toWorkChan chan message.ToWork, reportChan chan message.Report) {
+	go func() {
+		for toWork := range toWorkChan {
+			log.Printf("receive one job : %s", toWork)
+			var logsChan chan string
+			switch toWork.Cmd {
+			case message.PACKAGE :
+				logsChan = BuildPackage(toWork.Package)
+			case message.TEST:
+				logsChan = TestPackage(toWork.Package)
+			case message.HELLO:
+				reportChan <- message.Report{toWork.JobId, message.WORKING, []string{"Hello"}}
+			default:
+			// todo handle this case
+			}
+			if logsChan != nil {
+				go listenForLogs(logsChan, reportChan, toWork)
+			}
+		}
+	}()
+}
+
+// listen for log from a job and push it to the report chan
+func listenForLogs(logsChan chan string, reportChan chan message.Report, toWork message.ToWork) {
+	for log := range logsChan {
+		// todo handle buffered logs
+		// todo handle job status
+		reportChan <- message.Report{toWork.JobId, message.WORKING, []string{log}}
+	}
+
+}
 
 // get the version of go tools
 func GoVersion() chan string {
