@@ -44,7 +44,7 @@ func ExecuteJob(toWorkChan chan message.ToWork, reportChan chan message.Report) 
 			case message.HELLO:
 				reportChan <- message.Report{toWork.JobId, message.WORKING, []string{"Hello"}}
 			default:
-			// todo handle this case
+				// todo handle this case
 			}
 			if logsChan != nil {
 				// one goroutine for listening one job logs. May be merge with goroutine in execCommand

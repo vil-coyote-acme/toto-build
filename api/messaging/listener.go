@@ -31,7 +31,7 @@ type ListenerConfig struct {
 }
 
 type Listener struct {
-	conf *ListenerConfig
+	conf     *ListenerConfig
 	consumer *nsq.Consumer
 }
 

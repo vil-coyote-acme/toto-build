@@ -47,7 +47,7 @@ func Test_Main_should_Start_An_Nsq_Service(t *testing.T) {
 	defer graceFullShutDown()
 	sendMsg()
 	// then
-	receip, consumer := testtools.SetupListener("report", b.LookUpHttpAddrr + ":" + b.LookUpHttpPort)
+	receip, consumer := testtools.SetupListener("report", b.LookUpHttpAddrr+":"+b.LookUpHttpPort)
 	defer close(receip)
 	defer consumer.Stop()
 	assert.NotNil(t, consumer)

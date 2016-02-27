@@ -52,7 +52,7 @@ func Test_Producer_Start(t *testing.T) {
 	mes := message.Report{int64(1), message.PENDING, []string{"test"}}
 	ch <- mes
 	// and test listener
-	receip, consumer := testtools.SetupListener(c.Topic, b.LookUpHttpAddrr + ":" + b.LookUpHttpPort)
+	receip, consumer := testtools.SetupListener(c.Topic, b.LookUpHttpAddrr+":"+b.LookUpHttpPort)
 	// then
 	assert.Equal(t, mes, <-receip)
 	consumer.Stop()

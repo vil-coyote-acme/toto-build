@@ -29,14 +29,14 @@ import (
 )
 
 var (
-	nsqLookUpHost string
-	nsqLookUpPort string
-	brokerAddr string
-	brokerPort string
+	nsqLookUpHost  string
+	nsqLookUpPort  string
+	brokerAddr     string
+	brokerPort     string
 	embeddedBroker *broker.Broker
-	listener *messaging.Listener
-	toWorkChan chan message.ToWork
-	reportChan chan message.Report
+	listener       *messaging.Listener
+	toWorkChan     chan message.ToWork
+	reportChan     chan message.Report
 )
 
 func main() {
@@ -88,7 +88,7 @@ func graceFullShutDown() {
 // todo => unit tests
 func sayHello(topic string) {
 	config := nsq.NewConfig()
-	p, _ := nsq.NewProducer(brokerAddr + ":" + brokerPort, config)
+	p, _ := nsq.NewProducer(brokerAddr+":"+brokerPort, config)
 	mess := message.ToWork{int64(1), message.HELLO, "HELLO"}
 	body, _ := json.Marshal(mess) // todo handle this error case
 	p.Publish("jobs", body)
