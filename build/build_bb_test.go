@@ -38,7 +38,7 @@ func Test_Should_Build_Test_Sources(t *testing.T) {
 	c := build.BuildPackage("toto-build-agent/testapp")
 	out := testtools.ConsumeStringChan(c)
 	t.Logf("Test the go build command with succes. Output : %s\n\r", out)
-	assert.Equal(t, "toto-build-agent/testapp", strings.TrimSpace(out))
+	assert.Contains(t, strings.TrimSpace(out), "toto-build-agent/testapp")
 }
 
 func Test_Should_Test_Sources(t *testing.T) {

@@ -19,21 +19,25 @@ package build
 
 import (
 	"bufio"
+	"github.com/vil-coyote-acme/toto-build-common/message"
 	"io"
+	"log"
 	"os/exec"
 	"strings"
-	"log"
-	"github.com/vil-coyote-acme/toto-build-common/message"
 )
 
+// todo limit the number of goroutines !
+
 // will lauch job on incoming toWork
+// todo => unit tests
 func ExecuteJob(toWorkChan chan message.ToWork, reportChan chan message.Report) {
+	// one goroutine for launching jobs. May (must ?) be merge with routine in handler ?
 	go func() {
 		for toWork := range toWorkChan {
 			log.Printf("receive one job : %s", toWork)
 			var logsChan chan string
 			switch toWork.Cmd {
-			case message.PACKAGE :
+			case message.PACKAGE:
 				logsChan = BuildPackage(toWork.Package)
 			case message.TEST:
 				logsChan = TestPackage(toWork.Package)
@@ -43,6 +47,7 @@ func ExecuteJob(toWorkChan chan message.ToWork, reportChan chan message.Report) 
 			// todo handle this case
 			}
 			if logsChan != nil {
+				// one goroutine for listening one job logs. May be merge with goroutine in execCommand
 				go listenForLogs(logsChan, reportChan, toWork)
 			}
 		}
@@ -50,13 +55,24 @@ func ExecuteJob(toWorkChan chan message.ToWork, reportChan chan message.Report) 
 }
 
 // listen for log from a job and push it to the report chan
+// todo handle job status
 func listenForLogs(logsChan chan string, reportChan chan message.Report, toWork message.ToWork) {
-	for log := range logsChan {
-		// todo handle buffered logs
-		// todo handle job status
-		reportChan <- message.Report{toWork.JobId, message.WORKING, []string{log}}
-	}
+	// todo see if a more efficient way is possible
+	buf := []string{}
+	for {
+		select {
+		case s := <-logsChan:
+			buf = append(buf, s)
+		default:
+			if len(buf) > 0 {
+				reportChan <- message.Report{toWork.JobId, message.WORKING, buf}
+				buf = []string{}
+				s := <-logsChan
+				buf = append(buf, s)
+			}
 
+		}
+	}
 }
 
 // get the version of go tools
@@ -68,7 +84,7 @@ func GoVersion() chan string {
 // call the build command
 func BuildPackage(pkg string) chan string {
 	// todo next here: support many options !
-	cmd := exec.Command("go", "build", "-v", pkg)
+	cmd := exec.Command("go", "build", "-v", "-a", pkg)
 	return execCommand(cmd)
 }
 

@@ -18,13 +18,13 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package main
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
-	"github.com/vil-coyote-acme/toto-build-common/testtools"
-	"github.com/vil-coyote-acme/toto-build-common/message"
 	"encoding/json"
 	"github.com/nsqio/go-nsq"
+	"github.com/stretchr/testify/assert"
 	"github.com/vil-coyote-acme/toto-build-common/broker"
+	"github.com/vil-coyote-acme/toto-build-common/message"
+	"github.com/vil-coyote-acme/toto-build-common/testtools"
+	"testing"
 )
 
 func Test_Main_should_Parse_Arguments(t *testing.T) {
@@ -44,9 +44,12 @@ func Test_Main_should_Start_An_Nsq_Service(t *testing.T) {
 	defer b.Stop()
 	// when
 	startListening()
+	defer graceFullShutDown()
 	sendMsg()
 	// then
-	receip, consumer := testtools.SetupListener("report")
+	receip, consumer := testtools.SetupListener("report", b.LookUpHttpAddrr + ":" + b.LookUpHttpPort)
+	defer close(receip)
+	defer consumer.Stop()
 	assert.NotNil(t, consumer)
 	assert.NotNil(t, receip)
 	// first get the hello from the agent
@@ -55,7 +58,6 @@ func Test_Main_should_Start_An_Nsq_Service(t *testing.T) {
 	// then get the build log
 	buildTrace := <-receip
 	assert.Contains(t, buildTrace.Logs[0], "toto-build-agent/testapp")
-	close(receip)
 }
 
 func initVar() {

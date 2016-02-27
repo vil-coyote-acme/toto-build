@@ -21,10 +21,10 @@ import (
 	"encoding/json"
 	"github.com/nsqio/go-nsq"
 	"github.com/stretchr/testify/assert"
+	"github.com/vil-coyote-acme/toto-build-common/broker"
 	"github.com/vil-coyote-acme/toto-build-common/message"
 	"testing"
 	"toto-build-agent/api/messaging"
-	"github.com/vil-coyote-acme/toto-build-common/broker"
 )
 
 func Test_NewConfig(t *testing.T) {
@@ -39,10 +39,14 @@ func Test_NewConfig(t *testing.T) {
 func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
 	// given the listener
 	c := messaging.NewListenerConfig()
-	c.LookupAddr = []string{"127.0.0.1:4161"}
+	c.LookupAddr = []string{"127.0.0.1:24161"}
 	l := messaging.NewListener(c)
 	// broker initialization
 	b := broker.NewBroker()
+	b.BrokerPort = "24150"
+	b.BrokerHttpPort = "24151"
+	b.LookUpTcpPort = "24160"
+	b.LookUpHttpPort = "24161"
 	b.Start()
 	defer b.Stop()
 	// test message creation
@@ -50,7 +54,7 @@ func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
 	body, _ := json.Marshal(mess)
 	// message sending
 	config := nsq.NewConfig()
-	p, _ := nsq.NewProducer("127.0.0.1:4150", config)
+	p, _ := nsq.NewProducer("127.0.0.1:24150", config)
 	p.Publish(c.Topic, body)
 	// when
 	incomingChan := l.Start()

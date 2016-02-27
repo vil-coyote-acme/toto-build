@@ -18,14 +18,14 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package main
 
 import (
+	"encoding/json"
 	"flag"
-	"toto-build-agent/api/messaging"
+	"github.com/nsqio/go-nsq"
 	"github.com/vil-coyote-acme/toto-build-common/broker"
 	"github.com/vil-coyote-acme/toto-build-common/message"
-	"toto-build-agent/build"
 	"log"
-	"github.com/nsqio/go-nsq"
-	"encoding/json"
+	"toto-build-agent/api/messaging"
+	"toto-build-agent/build"
 )
 
 var (
@@ -33,6 +33,10 @@ var (
 	nsqLookUpPort string
 	brokerAddr string
 	brokerPort string
+	embeddedBroker *broker.Broker
+	listener *messaging.Listener
+	toWorkChan chan message.ToWork
+	reportChan chan message.Report
 )
 
 func main() {
@@ -48,13 +52,13 @@ func main() {
 func startListening() {
 	// first start the broker
 	log.Print("Start listening for jobs")
-	embeddedBroker := broker.NewBroker()
+	embeddedBroker = broker.NewBroker()
 	embeddedBroker.BrokerAddr = brokerAddr
 	embeddedBroker.BrokerPort = brokerPort
 	embeddedBroker.StartBroker()
 
 	// start the report producer
-	reportChan := make(chan message.Report, 20)
+	reportChan = make(chan message.Report, 20)
 	producerConf := messaging.NewProducerConfig()
 	producerConf.NsqAddr = brokerAddr + ":" + brokerPort
 	producer := messaging.NewProducer(producerConf)
@@ -63,13 +67,21 @@ func startListening() {
 	// start the work listener
 	listenerConf := messaging.NewListenerConfig()
 	listenerConf.LookupAddr = []string{nsqLookUpHost + ":" + nsqLookUpPort}
-	listener := messaging.NewListener(listenerConf)
+	listener = messaging.NewListener(listenerConf)
 	// must create the topic BEFORE listing on it
 	sayHello(listenerConf.Topic)
-	toWorkChan := listener.Start()
+	toWorkChan = listener.Start()
 
 	// and then start executing incoming job
 	build.ExecuteJob(toWorkChan, reportChan)
+}
+
+func graceFullShutDown() {
+	embeddedBroker.Stop()
+	listener.Stop()
+	close(toWorkChan)
+	close(reportChan)
+
 }
 
 // will publish the first report : a hello one
@@ -78,6 +90,6 @@ func sayHello(topic string) {
 	config := nsq.NewConfig()
 	p, _ := nsq.NewProducer(brokerAddr + ":" + brokerPort, config)
 	mess := message.ToWork{int64(1), message.HELLO, "HELLO"}
-	body, _ := json.Marshal(mess)// todo handle this error case
+	body, _ := json.Marshal(mess) // todo handle this error case
 	p.Publish("jobs", body)
 }

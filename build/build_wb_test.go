@@ -19,6 +19,7 @@ package build
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/vil-coyote-acme/toto-build-common/message"
 	"github.com/vil-coyote-acme/toto-build-common/testtools"
 	"os/exec"
 	"strings"
@@ -43,4 +44,36 @@ func Test_hasError_Should_Return_True(t *testing.T) {
 	res, mes := hasError(nil, nil, testtools.NewTestErr("my error"))
 	assert.True(t, res)
 	assert.Equal(t, "my error", mes[0])
+}
+
+func Test_listenForLogs_without_agregate(t *testing.T) {
+	// given
+	toWork := message.ToWork{int64(1), message.TEST, "myPkg"}
+	logsChan := make(chan string, 2)
+	reportChan := make(chan message.Report)
+	defer close(logsChan)
+	defer close(reportChan)
+	go listenForLogs(logsChan, reportChan, toWork)
+	// when
+	logsChan <- "toto"
+	// then
+	assert.Equal(t, message.Report{toWork.JobId, message.WORKING, []string{"toto"}}, <-reportChan)
+
+}
+
+func Test_listenForLogs_with_agregate(t *testing.T) {
+	// given
+	toWork := message.ToWork{int64(1), message.TEST, "myPkg"}
+	logsChan := make(chan string, 2)
+	reportChan := make(chan message.Report)
+	defer close(logsChan)
+	defer close(reportChan)
+	go listenForLogs(logsChan, reportChan, toWork)
+	// when
+	for i := 0; i < 2; i++ { // test twice to check the reset of the internal buffer
+		logsChan <- "toto"
+		logsChan <- "titi"
+		// then
+		assert.Equal(t, message.Report{toWork.JobId, message.WORKING, []string{"toto", "titi"}}, <-reportChan)
+	}
 }

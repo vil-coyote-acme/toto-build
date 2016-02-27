@@ -32,6 +32,7 @@ type ListenerConfig struct {
 
 type Listener struct {
 	conf *ListenerConfig
+	consumer *nsq.Consumer
 }
 
 // initialize new config for listener
@@ -57,14 +58,18 @@ func (l *Listener) Start() chan message.ToWork {
 	if err != nil {
 		log.Panicf("error when trying to create a consumer for topic : %v and channel : %v", l.conf.Topic, l.conf.Channel)
 	}
+	l.consumer = cons
 	// maybe possible to handle message in multiple goroutines
 	log.Print("starting connecting broker listener")
-	cons.AddHandler(NewHandler(c))
-	cons.ConnectToNSQLookupds(l.conf.LookupAddr)
+	l.consumer.AddHandler(NewHandler(c))
+	l.consumer.ConnectToNSQLookupds(l.conf.LookupAddr)
 	log.Print("Listener started")
 	return c
 }
 
+// todo tests
 func (l *Listener) Stop() {
-	// todo implements and test
+	if l.consumer != nil {
+		l.consumer.Stop()
+	}
 }

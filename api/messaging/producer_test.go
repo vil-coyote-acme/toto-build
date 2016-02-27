@@ -19,10 +19,10 @@ package messaging
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/vil-coyote-acme/toto-build-common/message"
-	"testing"
 	"github.com/vil-coyote-acme/toto-build-common/broker"
+	"github.com/vil-coyote-acme/toto-build-common/message"
 	"github.com/vil-coyote-acme/toto-build-common/testtools"
+	"testing"
 )
 
 func Test_NewProducerConfig(t *testing.T) {
@@ -36,10 +36,14 @@ func Test_NewProducerConfig(t *testing.T) {
 func Test_Producer_Start(t *testing.T) {
 	// given
 	c := NewProducerConfig()
-	c.NsqAddr = "127.0.0.1:4150"
+	c.NsqAddr = "127.0.0.1:14150"
 	p := NewProducer(c)
 	// and broker initialization
 	b := broker.NewBroker()
+	b.BrokerPort = "14150"
+	b.BrokerHttpPort = "14151"
+	b.LookUpTcpPort = "14160"
+	b.LookUpHttpPort = "14161"
 	b.Start()
 	defer b.Stop()
 	// when
@@ -48,7 +52,7 @@ func Test_Producer_Start(t *testing.T) {
 	mes := message.Report{int64(1), message.PENDING, []string{"test"}}
 	ch <- mes
 	// and test listener
-	receip, consumer := testtools.SetupListener(c.Topic)
+	receip, consumer := testtools.SetupListener(c.Topic, b.LookUpHttpAddrr + ":" + b.LookUpHttpPort)
 	// then
 	assert.Equal(t, mes, <-receip)
 	consumer.Stop()
