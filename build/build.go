@@ -19,18 +19,17 @@ package build
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/vil-coyote-acme/toto-build-common/message"
 	"io"
 	"log"
 	"os/exec"
 	"syscall"
-	"fmt"
 )
 
 // todo limit the number of goroutines !
 
 // will lauch job on incoming toWork
-// todo => unit tests
 func ExecuteJob(toWorkChan chan message.ToWork, reportChan chan message.Report) {
 	// one goroutine for launching jobs. May (must ?) be merge with routine in handler ?
 	go func() {
@@ -44,7 +43,7 @@ func ExecuteJob(toWorkChan chan message.ToWork, reportChan chan message.Report) 
 			case message.HELLO:
 				reportChan <- message.Report{toWork.JobId, message.SUCCESS, []string{"Hello"}}
 			default:
-			// todo handle this case
+				// todo handle this case
 			}
 		}
 	}()
@@ -124,7 +123,7 @@ func consumeBuffer(buf []string, jobId int64, reportChan chan message.Report) []
 // must be called at the end of the command, when there is nothing more to
 // read from stdout and stderr
 // will send a success or a failure report message through the given chanel
-func pushEndReport(cmd *exec.Cmd, jobId int64, reportChan chan message.Report)  {
+func pushEndReport(cmd *exec.Cmd, jobId int64, reportChan chan message.Report) {
 	if err := cmd.Wait(); err != nil {
 		// we have a failure for the command.
 		// we will now try to get the exit code

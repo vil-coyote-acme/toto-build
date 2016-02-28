@@ -19,10 +19,10 @@ package build_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"toto-build-agent/build"
 	"github.com/vil-coyote-acme/toto-build-common/message"
 	"github.com/vil-coyote-acme/toto-build-common/testtools"
+	"testing"
+	"toto-build-agent/build"
 )
 
 // test the printing of go tools versions
@@ -30,8 +30,8 @@ func Test_Should_Get_Go_Tools_Versions(t *testing.T) {
 	// given
 	reportChan := make(chan message.Report, 1)
 	defer close(reportChan)
-	build.GoVersion(int64(1), reportChan)
 	// when
+	build.GoVersion(int64(1), reportChan)
 	msg := <-reportChan
 	end := <-reportChan
 	// then
@@ -46,8 +46,8 @@ func Test_Should_Build_Test_Sources(t *testing.T) {
 	// given
 	reportChan := make(chan message.Report, 1)
 	defer close(reportChan)
-	build.BuildPackage("toto-build-agent/testapp", int64(1), reportChan)
 	// when
+	build.BuildPackage("toto-build-agent/testapp", int64(1), reportChan)
 	msg := <-reportChan
 	end := <-reportChan
 	t.Logf("Test the go build command with succes. Output : %s\n\r", msg.Logs)
@@ -60,8 +60,8 @@ func Test_Should_Test_Sources(t *testing.T) {
 	// given
 	reportChan := make(chan message.Report, 1)
 	defer close(reportChan)
-	build.TestPackage("toto-build-agent/testapp", int64(1), reportChan)
 	// when
+	build.TestPackage("toto-build-agent/testapp", int64(1), reportChan)
 	msg := <-reportChan
 	end := <-reportChan
 	// then
@@ -71,3 +71,82 @@ func Test_Should_Test_Sources(t *testing.T) {
 	assert.Equal(t, end.Status, message.SUCCESS)
 }
 
+func Test_TactPackage_should_failed_for_unknown_package(t *testing.T) {
+	// given
+	reportChan := make(chan message.Report, 1)
+	defer close(reportChan)
+	// when
+	build.TestPackage("plop/", int64(1), reportChan)
+	msg := <-reportChan
+	end := <-reportChan
+	// then
+	t.Logf("test the exec command failure. Output : %s, %d", msg.Logs, len(msg.Logs))
+	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "can't load package: package plop")
+	assert.Equal(t, msg.Status, message.WORKING)
+	assert.Equal(t, end.Status, message.FAILED)
+}
+
+func Test_BuildPackage_should_failed_for_unknown_package(t *testing.T) {
+	// given
+	reportChan := make(chan message.Report, 1)
+	defer close(reportChan)
+	// when
+	build.BuildPackage("plop/", int64(1), reportChan)
+	msg := <-reportChan
+	end := <-reportChan
+	// then
+	t.Logf("test the exec command failure. Output : %s, %d", msg.Logs, len(msg.Logs))
+	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "can't load package: package plop")
+	assert.Equal(t, msg.Status, message.WORKING)
+	assert.Equal(t, end.Status, message.FAILED)
+}
+
+// test the build function
+func Test_ExecuteJob_Should_Build_Test_Sources(t *testing.T) {
+	// given
+	toWorkChan := make(chan message.ToWork)
+	reportChan := make(chan message.Report, 1)
+	defer close(reportChan)
+	defer close(toWorkChan)
+	// when
+	build.ExecuteJob(toWorkChan, reportChan)
+	toWorkChan <- message.ToWork{int64(1), message.PACKAGE, "toto-build-agent/testapp"}
+	msg := <-reportChan
+	end := <-reportChan
+	t.Logf("Test the go build command with succes. Output : %s\n\r", msg.Logs)
+	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "toto-build-agent/testapp")
+	assert.Equal(t, msg.Status, message.WORKING)
+	assert.Equal(t, end.Status, message.SUCCESS)
+}
+
+func Test_ExecuteJob_Should_Test_Sources(t *testing.T) {
+	// given
+	toWorkChan := make(chan message.ToWork)
+	reportChan := make(chan message.Report, 1)
+	defer close(reportChan)
+	defer close(toWorkChan)
+	// when
+	build.ExecuteJob(toWorkChan, reportChan)
+	toWorkChan <- message.ToWork{int64(1), message.TEST, "toto-build-agent/testapp"}
+	msg := <-reportChan
+	end := <-reportChan
+	t.Logf("Test the go build command with succes. Output : %s\n\r", msg.Logs)
+	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "toto-build-agent/testapp")
+	assert.Equal(t, msg.Status, message.WORKING)
+	assert.Equal(t, end.Status, message.SUCCESS)
+}
+
+func Test_ExecuteJob_Should_Reply_To_Hello(t *testing.T) {
+	// given
+	toWorkChan := make(chan message.ToWork)
+	reportChan := make(chan message.Report, 1)
+	defer close(reportChan)
+	defer close(toWorkChan)
+	// when
+	build.ExecuteJob(toWorkChan, reportChan)
+	toWorkChan <- message.ToWork{int64(1), message.HELLO, ""}
+	msg := <-reportChan
+	t.Logf("Test the go build command with succes. Output : %s\n\r", msg.Logs)
+	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "Hello")
+	assert.Equal(t, msg.Status, message.SUCCESS)
+}

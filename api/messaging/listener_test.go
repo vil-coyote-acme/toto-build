@@ -41,6 +41,7 @@ func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
 	c := messaging.NewListenerConfig()
 	c.LookupAddr = []string{"127.0.0.1:24161"}
 	l := messaging.NewListener(c)
+	defer l.Stop()
 	// broker initialization
 	b := broker.NewBroker()
 	b.BrokerPort = "24150"
