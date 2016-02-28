@@ -23,7 +23,8 @@ import (
 	"io"
 	"log"
 	"os/exec"
-	"strings"
+	"syscall"
+	"fmt"
 )
 
 // todo limit the number of goroutines !
@@ -35,88 +36,69 @@ func ExecuteJob(toWorkChan chan message.ToWork, reportChan chan message.Report) 
 	go func() {
 		for toWork := range toWorkChan {
 			log.Printf("receive one job : %s", toWork)
-			var logsChan chan string
 			switch toWork.Cmd {
 			case message.PACKAGE:
-				logsChan = BuildPackage(toWork.Package)
+				BuildPackage(toWork.Package, toWork.JobId, reportChan)
 			case message.TEST:
-				logsChan = TestPackage(toWork.Package)
+				TestPackage(toWork.Package, toWork.JobId, reportChan)
 			case message.HELLO:
-				reportChan <- message.Report{toWork.JobId, message.WORKING, []string{"Hello"}}
+				reportChan <- message.Report{toWork.JobId, message.SUCCESS, []string{"Hello"}}
 			default:
-				// todo handle this case
-			}
-			if logsChan != nil {
-				// one goroutine for listening one job logs. May be merge with goroutine in execCommand
-				go listenForLogs(logsChan, reportChan, toWork)
+			// todo handle this case
 			}
 		}
 	}()
 }
 
-// listen for log from a job and push it to the report chan
-// todo handle job status
-func listenForLogs(logsChan chan string, reportChan chan message.Report, toWork message.ToWork) {
-	// todo see if a more efficient way is possible
-	buf := []string{}
-	for {
-		select {
-		case s := <-logsChan:
-			buf = append(buf, s)
-		default:
-			if len(buf) > 0 {
-				reportChan <- message.Report{toWork.JobId, message.WORKING, buf}
-				buf = []string{}
-				s := <-logsChan
-				buf = append(buf, s)
-			}
-
-		}
-	}
-}
-
 // get the version of go tools
-func GoVersion() chan string {
+func GoVersion(jobId int64, reportChan chan message.Report) {
 	cmd := exec.Command("go", "version")
-	return execCommand(cmd)
+	execCommand(cmd, jobId, reportChan)
 }
 
 // call the build command
-func BuildPackage(pkg string) chan string {
+func BuildPackage(pkg string, jobId int64, reportChan chan message.Report) {
 	// todo next here: support many options !
 	cmd := exec.Command("go", "build", "-v", "-a", pkg)
-	return execCommand(cmd)
+	execCommand(cmd, jobId, reportChan)
 }
 
-func TestPackage(pkg string) chan string {
+func TestPackage(pkg string, jobId int64, reportChan chan message.Report) {
 	cmd := exec.Command("go", "test", "-cover", pkg)
-	return execCommand(cmd)
+	execCommand(cmd, jobId, reportChan)
 }
 
 // execute one command
-func execCommand(cmd *exec.Cmd) chan string {
-	log.Printf("Start executing one command : %s", cmd)
-	c := make(chan string, 50)
+func execCommand(cmd *exec.Cmd, jobId int64, reportChan chan message.Report) {
+	log.Printf("Start executing one command : %v", cmd)
 	go func() {
-		defer close(c)
 		stdout, errPipe1 := cmd.StdoutPipe()
 		stderr, errPipe2 := cmd.StderrPipe()
 		errCmd := cmd.Start()
 		hasErr, errMes := hasError(errPipe1, errPipe2, errCmd)
 		if hasErr {
-			c <- strings.Join(errMes, "\n\r")
+			reportChan <- message.Report{jobId, message.FAILED, errMes}
 		} else {
 			multi := io.MultiReader(stdout, stderr)
 			in := bufio.NewScanner(multi)
+			// todo see if a more efficient way is possible
+			buf := []string{}
 			for in.Scan() {
-				c <- in.Text()
+				s := in.Text()
+				buf = append(buf, s)
+				if len(buf) > 4 {
+					buf = consumeBuffer(buf, jobId, reportChan)
+				}
 			}
-			if in.Err() != nil {
-				c <- in.Err().Error()
+			// finish the rest of the buffer
+			consumeBuffer(buf, jobId, reportChan)
+			if inErr := in.Err(); inErr != nil {
+				reportChan <- message.Report{jobId, message.FAILED, []string{inErr.Error()}}
+			} else {
+				pushEndReport(cmd, jobId, reportChan)
 			}
 		}
 	}()
-	return c
 }
 
 // Detect error and return mes error
@@ -128,4 +110,46 @@ func hasError(errors ...error) (res bool, errMess []string) {
 		}
 	}
 	return
+}
+
+// if not empty, consume all the buffer and send a report
+func consumeBuffer(buf []string, jobId int64, reportChan chan message.Report) []string {
+	if len(buf) > 0 {
+		reportChan <- message.Report{jobId, message.WORKING, buf}
+		return []string{}
+	}
+	return buf
+}
+
+// must be called at the end of the command, when there is nothing more to
+// read from stdout and stderr
+// will send a success or a failure report message through the given chanel
+func pushEndReport(cmd *exec.Cmd, jobId int64, reportChan chan message.Report)  {
+	if err := cmd.Wait(); err != nil {
+		// we have a failure for the command.
+		// we will now try to get the exit code
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			// the error from cmd.Wait is an *exec.ExitError. It means that the
+			// exit status is != 0
+
+			/*
+			 * here is a interesting comments getting from stackoverflow. I let it
+			 *
+			 */
+			// This works on both Unix and Windows. Although package
+			// syscall is generally platform dependent, WaitStatus is
+			// defined for both Unix and Windows and in both cases has
+			// an ExitStatus() method with the same signature.
+			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+				errMesg := fmt.Sprintf("Exit Status: %d", status.ExitStatus())
+				reportChan <- message.Report{jobId, message.FAILED, []string{errMesg}}
+			}
+		} else {
+			errMesg := fmt.Sprintf("Unknow error : %v", err)
+			reportChan <- message.Report{jobId, message.FAILED, []string{errMesg}}
+		}
+	} else {
+		// the command is in success state.
+		reportChan <- message.Report{jobId, message.SUCCESS, []string{}}
+	}
 }

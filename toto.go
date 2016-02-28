@@ -85,11 +85,9 @@ func graceFullShutDown() {
 }
 
 // will publish the first report : a hello one
-// todo => unit tests
 func sayHello(topic string) {
 	config := nsq.NewConfig()
 	p, _ := nsq.NewProducer(brokerAddr+":"+brokerPort, config)
-	mess := message.ToWork{int64(1), message.HELLO, "HELLO"}
-	body, _ := json.Marshal(mess) // todo handle this error case
+	body, _ := json.Marshal(message.ToWork{int64(1), message.HELLO, "HELLO"}) // todo handle this error case
 	p.Publish("jobs", body)
 }

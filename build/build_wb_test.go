@@ -18,20 +18,22 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 package build
 
 import (
+	"testing"
+	"os/exec"
 	"github.com/stretchr/testify/assert"
 	"github.com/vil-coyote-acme/toto-build-common/message"
 	"github.com/vil-coyote-acme/toto-build-common/testtools"
-	"os/exec"
-	"strings"
-	"testing"
 )
 
 // test the command execution
 func Test_execCommand_should_failed_for_non_existing_command(t *testing.T) {
-	c := execCommand(exec.Command("toto", "isHappy"))
-	str := testtools.ConsumeStringChan(c)
-	t.Logf("test the exec command failure. Output : %s", str)
-	assert.True(t, strings.Contains(str, "executable file not found in $PATH"))
+	reportChan := make(chan message.Report, 1)
+	defer close(reportChan)
+	execCommand(exec.Command("toto", "isHappy"), int64(1), reportChan)
+	out := <-reportChan
+	t.Logf("test the exec command failure. Output : %s, %d", out.Logs, len(out.Logs))
+	assert.Contains(t, testtools.FromSliceToString(out.Logs), "executable file not found in $PATH")
+	assert.Equal(t, out.Status, message.FAILED)
 }
 
 func Test_hasError_Should_Return_False(t *testing.T) {
@@ -46,34 +48,4 @@ func Test_hasError_Should_Return_True(t *testing.T) {
 	assert.Equal(t, "my error", mes[0])
 }
 
-func Test_listenForLogs_without_agregate(t *testing.T) {
-	// given
-	toWork := message.ToWork{int64(1), message.TEST, "myPkg"}
-	logsChan := make(chan string, 2)
-	reportChan := make(chan message.Report)
-	defer close(logsChan)
-	defer close(reportChan)
-	go listenForLogs(logsChan, reportChan, toWork)
-	// when
-	logsChan <- "toto"
-	// then
-	assert.Equal(t, message.Report{toWork.JobId, message.WORKING, []string{"toto"}}, <-reportChan)
 
-}
-
-func Test_listenForLogs_with_agregate(t *testing.T) {
-	// given
-	toWork := message.ToWork{int64(1), message.TEST, "myPkg"}
-	logsChan := make(chan string, 2)
-	reportChan := make(chan message.Report)
-	defer close(logsChan)
-	defer close(reportChan)
-	go listenForLogs(logsChan, reportChan, toWork)
-	// when
-	for i := 0; i < 2; i++ { // test twice to check the reset of the internal buffer
-		logsChan <- "toto"
-		logsChan <- "titi"
-		// then
-		assert.Equal(t, message.Report{toWork.JobId, message.WORKING, []string{"toto", "titi"}}, <-reportChan)
-	}
-}

@@ -19,30 +19,55 @@ package build_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/vil-coyote-acme/toto-build-common/testtools"
-	"strings"
 	"testing"
 	"toto-build-agent/build"
+	"github.com/vil-coyote-acme/toto-build-common/message"
+	"github.com/vil-coyote-acme/toto-build-common/testtools"
 )
 
 // test the printing of go tools versions
 func Test_Should_Get_Go_Tools_Versions(t *testing.T) {
-	c := build.GoVersion()
-	out := testtools.ConsumeStringChan(c)
-	t.Logf("Test the go version command. Output : %s\n\r", out)
-	assert.True(t, strings.Contains(out, "go version"))
+	// given
+	reportChan := make(chan message.Report, 1)
+	defer close(reportChan)
+	build.GoVersion(int64(1), reportChan)
+	// when
+	msg := <-reportChan
+	end := <-reportChan
+	// then
+	t.Logf("Test the go version command. Output : %s\n\r", msg.Logs)
+	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "go version")
+	assert.Equal(t, msg.Status, message.WORKING)
+	assert.Equal(t, end.Status, message.SUCCESS)
 }
 
 // test the build function
 func Test_Should_Build_Test_Sources(t *testing.T) {
-	c := build.BuildPackage("toto-build-agent/testapp")
-	out := testtools.ConsumeStringChan(c)
-	t.Logf("Test the go build command with succes. Output : %s\n\r", out)
-	assert.Contains(t, strings.TrimSpace(out), "toto-build-agent/testapp")
+	// given
+	reportChan := make(chan message.Report, 1)
+	defer close(reportChan)
+	build.BuildPackage("toto-build-agent/testapp", int64(1), reportChan)
+	// when
+	msg := <-reportChan
+	end := <-reportChan
+	t.Logf("Test the go build command with succes. Output : %s\n\r", msg.Logs)
+	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "toto-build-agent/testapp")
+	assert.Equal(t, msg.Status, message.WORKING)
+	assert.Equal(t, end.Status, message.SUCCESS)
 }
 
 func Test_Should_Test_Sources(t *testing.T) {
-	c := build.TestPackage("toto-build-agent/testapp")
-	out := testtools.ConsumeStringChan(c)
-	t.Logf("Test the go test command with succes. Output : %s\n", out)
+	// given
+	reportChan := make(chan message.Report, 1)
+	defer close(reportChan)
+	build.TestPackage("toto-build-agent/testapp", int64(1), reportChan)
+	// when
+	msg := <-reportChan
+	end := <-reportChan
+	// then
+	t.Logf("Test the go test command with succes. Output : %s\n", msg.Logs)
+	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "toto-build-agent/testapp")
+	assert.Equal(t, msg.Status, message.WORKING)
+	assert.Equal(t, end.Status, message.SUCCESS)
 }
+

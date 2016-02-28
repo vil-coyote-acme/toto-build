@@ -52,12 +52,17 @@ func Test_Main_should_Start_An_Nsq_Service(t *testing.T) {
 	defer consumer.Stop()
 	assert.NotNil(t, consumer)
 	assert.NotNil(t, receip)
-	// first get the hello from the agent
+	// first get the hello from the agent, then the message with the build log and finally the last report with
+	// the build status (should be SUCCESS here)
 	hello := <-receip
-	assert.Equal(t, "Hello", hello.Logs[0])
-	// then get the build log
 	buildTrace := <-receip
-	assert.Contains(t, buildTrace.Logs[0], "toto-build-agent/testapp")
+	finalReport := <-receip
+
+	assert.Contains(t, testtools.FromSliceToString(hello.Logs), "Hello")
+	assert.Equal(t, hello.Status, message.SUCCESS)
+	assert.Contains(t, testtools.FromSliceToString(buildTrace.Logs), "toto-build-agent/testapp")
+	assert.Equal(t, buildTrace.Status, message.WORKING)
+	assert.Equal(t, finalReport.Status, message.SUCCESS)
 }
 
 func initVar() {

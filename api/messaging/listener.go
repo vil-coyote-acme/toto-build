@@ -67,7 +67,7 @@ func (l *Listener) Start() chan message.ToWork {
 	return c
 }
 
-// todo tests
+// will attempt to do a gracefull shutdown of the listener
 func (l *Listener) Stop() {
 	if l.consumer != nil {
 		l.consumer.Stop()
