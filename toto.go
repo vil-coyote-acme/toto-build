@@ -23,23 +23,27 @@ import (
 	"github.com/nsqio/go-nsq"
 	"github.com/vil-coyote-acme/toto-build-common/broker"
 	"github.com/vil-coyote-acme/toto-build-common/message"
-	"log"
 	"toto-build-agent/api/messaging"
 	"toto-build-agent/build"
+	"github.com/vil-coyote-acme/toto-build-common/logs"
 )
 
 var (
-	nsqLookUpHost  string
-	nsqLookUpPort  string
-	brokerAddr     string
-	brokerPort     string
+	nsqLookUpHost string
+	nsqLookUpPort string
+	brokerAddr string
+	brokerPort string
 	embeddedBroker *broker.Broker
 	listener       *messaging.Listener
 	toWorkChan     chan message.ToWork
 	reportChan     chan message.Report
+	logger                *logs.Logger
 )
 
+// todo get the log level as an input
 func main() {
+	logger = logs.NewLogger("[TOTO-BUILD main] : ", logs.NewConsoleAppender(logs.INFO))
+	logger.Info("application is starting")
 	flag.StringVar(&brokerAddr, "broker-addr", "127.0.0.1", "address of the broker. Should be accessible from scheduler")
 	flag.StringVar(&brokerPort, "broker-port", "4150", "port of the broker. Should be accessible from scheduler")
 	flag.StringVar(&nsqLookUpHost, "lookup-addrr", "127.0.0.1", "address of the lookup service. Used by toto-build to get topic used for communications")
@@ -51,13 +55,14 @@ func main() {
 // will start an embeded broker, a report producer and a toWork listener
 func startListening() {
 	// first start the broker
-	log.Print("Start listening for jobs")
+	logger.Info("Starting listening for jobs")
 	embeddedBroker = broker.NewBroker()
 	embeddedBroker.BrokerAddr = brokerAddr
 	embeddedBroker.BrokerPort = brokerPort
 	embeddedBroker.StartBroker()
 
 	// start the report producer
+	logger.Info("Starting the report producer")
 	reportChan = make(chan message.Report, 20)
 	producerConf := messaging.NewProducerConfig()
 	producerConf.NsqAddr = brokerAddr + ":" + brokerPort
@@ -65,6 +70,7 @@ func startListening() {
 	producer.Start(reportChan)
 
 	// start the work listener
+	logger.Info("Starting the work listener")
 	listenerConf := messaging.NewListenerConfig()
 	listenerConf.LookupAddr = []string{nsqLookUpHost + ":" + nsqLookUpPort}
 	listener = messaging.NewListener(listenerConf)
@@ -73,21 +79,25 @@ func startListening() {
 	toWorkChan = listener.Start()
 
 	// and then start executing incoming job
+	logger.Info("Starting execution incoming Jobs")
 	build.ExecuteJob(toWorkChan, reportChan)
+
+	logger.Info("Agent setup done")
 }
 
 func graceFullShutDown() {
+	logger.Info("Starting stopping grecefully")
 	embeddedBroker.Stop()
 	listener.Stop()
 	close(toWorkChan)
 	close(reportChan)
-
+	logger.Info("Stopped grecefully")
 }
 
 // will publish the first report : a hello one
 func sayHello(topic string) {
 	config := nsq.NewConfig()
-	p, _ := nsq.NewProducer(brokerAddr+":"+brokerPort, config)
+	p, _ := nsq.NewProducer(brokerAddr + ":" + brokerPort, config)
 	body, _ := json.Marshal(message.ToWork{int64(1), message.HELLO, "HELLO"}) // todo handle this error case
 	p.Publish("jobs", body)
 }
