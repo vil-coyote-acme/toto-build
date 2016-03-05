@@ -30,8 +30,9 @@ func Test_execCommand_should_failed_for_non_existing_command(t *testing.T) {
 	// given
 	reportChan := make(chan message.Report, 1)
 	defer close(reportChan)
+	mes := message.ToWork{int64(1), message.PACKAGE, "toto", "go1.6", ""}
 	// when
-	execCommand(exec.Command("toto", "isHappy"), int64(1), reportChan)
+	execCommand(exec.Command("toto", "isHappy"), mes, reportChan)
 	out := <-reportChan
 	// then
 	t.Logf("test the exec command failure. Output : %s, %d", out.Logs, len(out.Logs))

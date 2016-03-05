@@ -22,61 +22,59 @@ import (
 	"fmt"
 	"github.com/vil-coyote-acme/toto-build-common/message"
 	"io"
-	"log"
 	"os/exec"
 	"syscall"
+	"github.com/vil-coyote-acme/toto-build-common/logs"
 )
 
 // todo limit the number of goroutines !
+
+var (
+	logger = logs.NewLogger("[BUILD-ENGINE] : ", logs.NewConsoleAppender(logs.INFO))
+)
 
 // will lauch job on incoming toWork
 func ExecuteJob(toWorkChan chan message.ToWork, reportChan chan message.Report) {
 	// one goroutine for launching jobs. May (must ?) be merge with routine in handler ?
 	go func() {
 		for toWork := range toWorkChan {
-			log.Printf("receive one job : %s", toWork)
+			logger.Infof("receive one job : %s", toWork)
 			switch toWork.Cmd {
 			case message.PACKAGE:
-				BuildPackage(toWork.Package, toWork.JobId, reportChan)
+				BuildPackage(toWork, reportChan)
 			case message.TEST:
-				TestPackage(toWork.Package, toWork.JobId, reportChan)
+				TestPackage(toWork, reportChan)
 			case message.HELLO:
 				reportChan <- message.Report{toWork.JobId, message.SUCCESS, []string{"Hello"}}
 			default:
-				// todo handle this case
+			// todo handle this case
 			}
 		}
 	}()
 }
 
-// get the version of go tools
-func GoVersion(jobId int64, reportChan chan message.Report) {
-	cmd := exec.Command("go", "version")
-	execCommand(cmd, jobId, reportChan)
-}
-
 // call the build command
-func BuildPackage(pkg string, jobId int64, reportChan chan message.Report) {
+func BuildPackage(mes message.ToWork, reportChan chan message.Report) {
 	// todo next here: support many options !
-	cmd := exec.Command("go", "build", "-v", "-a", pkg)
-	execCommand(cmd, jobId, reportChan)
+	cmd := exec.Command("go", "build", "-v", "-a", mes.Package)
+	execCommand(cmd, mes, reportChan)
 }
 
-func TestPackage(pkg string, jobId int64, reportChan chan message.Report) {
-	cmd := exec.Command("go", "test", "-cover", pkg)
-	execCommand(cmd, jobId, reportChan)
+func TestPackage(mes message.ToWork, reportChan chan message.Report) {
+	cmd := exec.Command("go", "test", "-cover", mes.Package)
+	execCommand(cmd, mes, reportChan)
 }
 
 // execute one command
-func execCommand(cmd *exec.Cmd, jobId int64, reportChan chan message.Report) {
-	log.Printf("Start executing one command : %v", cmd)
+func execCommand(cmd *exec.Cmd, mes message.ToWork, reportChan chan message.Report) {
+	logger.Infof("Start executing one command : %v", cmd)
 	go func() {
 		stdout, errPipe1 := cmd.StdoutPipe()
 		stderr, errPipe2 := cmd.StderrPipe()
 		errCmd := cmd.Start()
 		hasErr, errMes := hasError(errPipe1, errPipe2, errCmd)
 		if hasErr {
-			reportChan <- message.Report{jobId, message.FAILED, errMes}
+			reportChan <- message.Report{mes.JobId, message.FAILED, errMes}
 		} else {
 			multi := io.MultiReader(stdout, stderr)
 			in := bufio.NewScanner(multi)
@@ -86,15 +84,15 @@ func execCommand(cmd *exec.Cmd, jobId int64, reportChan chan message.Report) {
 				s := in.Text()
 				buf = append(buf, s)
 				if len(buf) > 4 {
-					buf = consumeBuffer(buf, jobId, reportChan)
+					buf = consumeBuffer(buf, mes.JobId, reportChan)
 				}
 			}
 			// finish the rest of the buffer
-			consumeBuffer(buf, jobId, reportChan)
+			consumeBuffer(buf, mes.JobId, reportChan)
 			if inErr := in.Err(); inErr != nil {
-				reportChan <- message.Report{jobId, message.FAILED, []string{inErr.Error()}}
+				reportChan <- message.Report{mes.JobId, message.FAILED, []string{inErr.Error()}}
 			} else {
-				pushEndReport(cmd, jobId, reportChan)
+				pushEndReport(cmd, mes.JobId, reportChan)
 			}
 		}
 	}()

@@ -25,6 +25,7 @@ import (
 	"github.com/vil-coyote-acme/toto-build-common/message"
 	"github.com/vil-coyote-acme/toto-build-common/testtools"
 	"testing"
+	"github.com/vil-coyote-acme/toto-build-common/logs"
 )
 
 func Test_Main_should_Parse_Arguments(t *testing.T) {
@@ -47,7 +48,7 @@ func Test_Main_should_Start_An_Nsq_Service(t *testing.T) {
 	defer graceFullShutDown()
 	sendMsg()
 	// then
-	receip, consumer := testtools.SetupListener("report", b.LookUpHttpAddrr+":"+b.LookUpHttpPort)
+	receip, consumer := testtools.SetupListener("report", b.LookUpHttpAddrr + ":" + b.LookUpHttpPort)
 	defer close(receip)
 	defer consumer.Stop()
 	assert.NotNil(t, consumer)
@@ -70,6 +71,7 @@ func initVar() {
 	brokerPort = "4150"
 	nsqLookUpHost = "127.0.0.1"
 	nsqLookUpPort = "4161"
+	logger = logs.NewLogger("[TOTO-BUILD main] : ", logs.NewConsoleAppender(logs.INFO))
 }
 
 func startLookUp() *broker.Broker {
@@ -80,7 +82,7 @@ func startLookUp() *broker.Broker {
 
 func sendMsg() {
 	// test message creation
-	mess := message.ToWork{int64(1), message.TEST, "toto-build-agent/testapp"}
+	mess := message.ToWork{int64(1), message.TEST, "toto-build-agent/testapp", "go1.6", ""}
 	body, _ := json.Marshal(mess)
 	// message sending
 	config := nsq.NewConfig()

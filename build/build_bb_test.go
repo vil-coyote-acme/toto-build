@@ -25,29 +25,14 @@ import (
 	"toto-build-agent/build"
 )
 
-// test the printing of go tools versions
-func Test_Should_Get_Go_Tools_Versions(t *testing.T) {
-	// given
-	reportChan := make(chan message.Report, 1)
-	defer close(reportChan)
-	// when
-	build.GoVersion(int64(1), reportChan)
-	msg := <-reportChan
-	end := <-reportChan
-	// then
-	t.Logf("Test the go version command. Output : %s\n\r", msg.Logs)
-	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "go version")
-	assert.Equal(t, msg.Status, message.WORKING)
-	assert.Equal(t, end.Status, message.SUCCESS)
-}
-
 // test the build function
 func Test_Should_Build_Test_Sources(t *testing.T) {
 	// given
 	reportChan := make(chan message.Report, 1)
 	defer close(reportChan)
+	mes := message.ToWork{int64(1), message.PACKAGE, "toto-build-agent/testapp", "go1.6", ""}
 	// when
-	build.BuildPackage("toto-build-agent/testapp", int64(1), reportChan)
+	build.BuildPackage(mes, reportChan)
 	msg := <-reportChan
 	end := <-reportChan
 	t.Logf("Test the go build command with succes. Output : %s\n\r", msg.Logs)
@@ -60,8 +45,9 @@ func Test_Should_Test_Sources(t *testing.T) {
 	// given
 	reportChan := make(chan message.Report, 1)
 	defer close(reportChan)
+	mes := message.ToWork{int64(1), message.PACKAGE, "toto-build-agent/testapp", "go1.6", ""}
 	// when
-	build.TestPackage("toto-build-agent/testapp", int64(1), reportChan)
+	build.TestPackage(mes, reportChan)
 	msg := <-reportChan
 	end := <-reportChan
 	// then
@@ -75,8 +61,9 @@ func Test_TactPackage_should_failed_for_unknown_package(t *testing.T) {
 	// given
 	reportChan := make(chan message.Report, 1)
 	defer close(reportChan)
+	mes := message.ToWork{int64(1), message.PACKAGE, "plop/", "go1.6", ""}
 	// when
-	build.TestPackage("plop/", int64(1), reportChan)
+	build.TestPackage(mes, reportChan)
 	msg := <-reportChan
 	end := <-reportChan
 	// then
@@ -90,8 +77,9 @@ func Test_BuildPackage_should_failed_for_unknown_package(t *testing.T) {
 	// given
 	reportChan := make(chan message.Report, 1)
 	defer close(reportChan)
+	mes := message.ToWork{int64(1), message.PACKAGE, "plop/", "go1.6", ""}
 	// when
-	build.BuildPackage("plop/", int64(1), reportChan)
+	build.BuildPackage(mes, reportChan)
 	msg := <-reportChan
 	end := <-reportChan
 	// then
@@ -110,7 +98,7 @@ func Test_ExecuteJob_Should_Build_Test_Sources(t *testing.T) {
 	defer close(toWorkChan)
 	// when
 	build.ExecuteJob(toWorkChan, reportChan)
-	toWorkChan <- message.ToWork{int64(1), message.PACKAGE, "toto-build-agent/testapp"}
+	toWorkChan <- message.ToWork{int64(1), message.PACKAGE, "toto-build-agent/testapp", "go1.6", ""}
 	msg := <-reportChan
 	end := <-reportChan
 	t.Logf("Test the go build command with succes. Output : %s\n\r", msg.Logs)
@@ -127,7 +115,7 @@ func Test_ExecuteJob_Should_Test_Sources(t *testing.T) {
 	defer close(toWorkChan)
 	// when
 	build.ExecuteJob(toWorkChan, reportChan)
-	toWorkChan <- message.ToWork{int64(1), message.TEST, "toto-build-agent/testapp"}
+	toWorkChan <- message.ToWork{int64(1), message.TEST, "toto-build-agent/testapp", "go1.6", ""}
 	msg := <-reportChan
 	end := <-reportChan
 	t.Logf("Test the go build command with succes. Output : %s\n\r", msg.Logs)
@@ -144,7 +132,7 @@ func Test_ExecuteJob_Should_Reply_To_Hello(t *testing.T) {
 	defer close(toWorkChan)
 	// when
 	build.ExecuteJob(toWorkChan, reportChan)
-	toWorkChan <- message.ToWork{int64(1), message.HELLO, ""}
+	toWorkChan <- message.ToWork{int64(1), message.HELLO, "", "go1.6", ""}
 	msg := <-reportChan
 	t.Logf("Test the go build command with succes. Output : %s\n\r", msg.Logs)
 	assert.Contains(t, testtools.FromSliceToString(msg.Logs), "Hello")

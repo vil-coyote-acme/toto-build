@@ -98,6 +98,6 @@ func graceFullShutDown() {
 func sayHello(topic string) {
 	config := nsq.NewConfig()
 	p, _ := nsq.NewProducer(brokerAddr + ":" + brokerPort, config)
-	body, _ := json.Marshal(message.ToWork{int64(1), message.HELLO, "HELLO"}) // todo handle this error case
+	body, _ := json.Marshal(message.ToWork{int64(1), message.HELLO, "HELLO", "", ""})
 	p.Publish("jobs", body)
 }
