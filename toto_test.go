@@ -82,7 +82,7 @@ func startLookUp() *broker.Broker {
 
 func sendMsg() {
 	// test message creation
-	mess := message.ToWork{int64(1), message.TEST, "toto-build-agent/testapp", "go1.6", ""}
+	mess := message.ToWork{int64(1), message.TEST, "toto-build-agent/testapp", "go1.6", "https://github.com/vil-coyote-acme/toto-example.git"}
 	body, _ := json.Marshal(mess)
 	// message sending
 	config := nsq.NewConfig()

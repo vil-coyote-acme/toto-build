@@ -51,7 +51,7 @@ func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
 	b.Start()
 	defer b.Stop()
 	// test message creation
-	mess := message.ToWork{int64(1), message.TEST, "myPkg", "go1.6", ""}
+	mess := message.ToWork{int64(1), message.TEST, "myPkg", "go1.6", "https://github.com/vil-coyote-acme/toto-example.git"}
 	body, _ := json.Marshal(mess)
 	// message sending
 	config := nsq.NewConfig()
@@ -60,5 +60,5 @@ func Test_Reception_Of_One_ToWork_Message(t *testing.T) {
 	// when
 	incomingChan := l.Start()
 	// then
-	assert.Equal(t, message.ToWork{int64(1), message.TEST, "myPkg", "go1.6", ""}, <-incomingChan)
+	assert.Equal(t, message.ToWork{int64(1), message.TEST, "myPkg", "go1.6", "https://github.com/vil-coyote-acme/toto-example.git"}, <-incomingChan)
 }

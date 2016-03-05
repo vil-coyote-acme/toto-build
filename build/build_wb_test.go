@@ -30,7 +30,7 @@ func Test_execCommand_should_failed_for_non_existing_command(t *testing.T) {
 	// given
 	reportChan := make(chan message.Report, 1)
 	defer close(reportChan)
-	mes := message.ToWork{int64(1), message.PACKAGE, "toto", "go1.6", ""}
+	mes := message.ToWork{int64(1), message.PACKAGE, "toto", "go1.6", "https://github.com/vil-coyote-acme/toto-example.git"}
 	// when
 	execCommand(exec.Command("toto", "isHappy"), mes, reportChan)
 	out := <-reportChan
